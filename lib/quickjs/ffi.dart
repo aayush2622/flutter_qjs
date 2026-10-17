@@ -109,7 +109,17 @@ abstract base class JSPropertyEnum extends Opaque {}
 final DynamicLibrary _qjsLib = _openLib();
 
 DynamicLibrary _openLib() {
-  final exeDir = File(Platform.resolvedExecutable).parent.path;
+  // Platform.resolvedExecutable can come back unset on iOS (the embedder
+  // doesn't always call Dart_SetExecutableName), which throws a Null-cast
+  // TypeError rather than returning an empty string. The exeDir-based
+  // candidates are only ever a fallback alongside bundle-relative paths, so
+  // losing it just means those candidates are skipped instead of crashing.
+  String exeDir;
+  try {
+    exeDir = File(Platform.resolvedExecutable).parent.path;
+  } catch (_) {
+    exeDir = '';
+  }
   final currentDir = Directory.current.path;
 
   DynamicLibrary? tryOpen(String path) {
